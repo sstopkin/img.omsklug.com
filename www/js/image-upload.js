@@ -51,9 +51,8 @@ var tmp_file;
 
 var options = {
     allowedFormats: ['jpg', 'jpeg', 'png', 'gif'],
-    maxWidth: 250,
-    maxHeight: 250,
-    maxFileSizeKb: 2048
+    maxFileSizeKb: 2048,
+    APP_URL: "http://localhost:8080/upload"
 };
 
 $(document).ready(function () {
@@ -69,7 +68,7 @@ $(document).ready(function () {
     $uploadFileButton.css('display', 'none');
     $progressBar.css('display', 'none');
 
-    if (typeof (window.FileReader) == 'undefined') {
+    if (typeof (window.FileReader) === 'undefined') {
 //        $dropZone.text('Не поддерживается браузером!');
         $imageUpload.prepend(getAlertHtml('FileReader does not supported'));
 //        $dropZone.addClass('error');
@@ -182,42 +181,15 @@ function upload(file) {
     $progressBar.css('display', 'inline-block');
     var xhr = new XMLHttpRequest();
 
-    //    // Слушаем процесс загрузки файла
-//    var progressBar = document.querySelector('progress');
-
-    xhr.upload.onprogress = function (e) { // <<<
+    xhr.upload.onprogress = function (e) {
         if (e.lengthComputable) {
             var valeur = (e.loaded / e.total) * 100;
             $progressBar.css('width', valeur + '%').attr('aria-valuenow', valeur);
             $progressBar.text(valeur + '%');
-//            progressBar.value = (e.loaded / e.total) * 100;
-//            progressBar.textContent = progressBar.value; // Если браузер не поддерживает элемент progress
         }
     };
-//    var formData = new FormData();
-//    xhr.onload = successfullyUploaded;
-    xhr.open("POST", "http://localhost:8080/upload", true);
+    xhr.open("POST", options.APP_URL, true);
     xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-//    for(var file in files) {
-//        formData.append("uploads", files[file].data);
-//    }
     xhr.send(data);
 
 }
-//
-//function uploadFiles(file) {
-//    var url = "http://localhost:8080/upload";
-//    var formData = new FormData();
-//
-//    formData.append(file.name, file);
-////  for (var i = 0, file; file = files[i]; ++i) {
-////    formData.append(file.name, file);
-////  }
-//
-//    var xhr = new XMLHttpRequest();
-//    xhr.open('POST', url, true);
-//    xhr.onload = function (e) { /*...*/
-//    };
-//
-//    xhr.send(formData);  // multipart/form-data
-//}

@@ -22,7 +22,7 @@ var httpLib = http;
 // app.use(express.static(path.join(__dirname, 'www')));
 app.use('/', express.static(path.join(__dirname, 'www')));
 
-//used for save compatibility with old img.omsklug.com
+//for save compatibility with old img.omsklug.com
 app.use('/i', express.static(path.join(__dirname, 'old_images')));
 
 app.get('/health', function(req, res) {
@@ -46,8 +46,8 @@ var storage = multer.diskStorage({
 });
 
 var upload = multer({
-     dest: config.IMAGES_TARGET_FOLDER,
-//    storage: storage,
+//     dest: config.IMAGES_TARGET_FOLDER,
+    storage: storage,
     limits: {
         fieldNameSize: 50,
         files: 1,
@@ -152,13 +152,10 @@ app.get('/uploads/:file', function(req, res) {
 //     });
 // } else {
 var server = app.listen(8080, function() {
-    var host = server.address().address
-    var port = server.address().port
+    var host = server.address().address;
+    var port = server.address().port;
 
-    console.log("Started: " + new Date())
-    console.log("Process: (pid " + process.pid + ") listening at http://%s:%s", host, port)
+    console.log("Started: " + new Date());
+    console.log("Process: (pid " + process.pid + ") listening at http://%s:%s", host, port);
 
-})
-// }
-
-// 	})
+});
