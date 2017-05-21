@@ -33,41 +33,41 @@ app.get('/health', function(req, res) {
         message: 'healthy'
     };
     res.status(200).send(JSON.stringify(data));
-})
+});
 
 var storage = multer.diskStorage({
     destination: function(request, file, callback) {
         callback(null, config.IMAGES_TARGET_FOLDER);
     },
     filename: function(request, file, callback) {
-        console.log(file);
-        callback(null, file.originalname)
+//        console.log(file);
+        callback(null, file.originalname);
     }
 });
 
 var upload = multer({
-    // dest: config.IMAGES_TARGET_FOLDER,
-    storage: storage,
+     dest: config.IMAGES_TARGET_FOLDER,
+//    storage: storage,
     limits: {
         fieldNameSize: 50,
         files: 1,
         fields: 5,
         fileSize: 1024 * 1024
     }
-}).single('file')
+}).single('file');
 
 app.post('/upload', function(req, res) {
     upload(req, res, function(err) {
         if (err) {
             // An error occurred when uploading
-            console.log('error' + err)
+            console.log('error' + err);
         }
-    })
+    });
     // console.log(req);
-    console.log(req.body, 'Body');
-    console.log(req.file, 'files');
+//    console.log(req.body, 'Body');
+//    console.log(req.file, 'file');
     res.status(200).end();
-})
+});
 
 
 // app.post('/upload', upload.single('file'), function(req, res) {

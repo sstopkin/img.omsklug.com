@@ -46,6 +46,8 @@ var $dropZone;
 var $removeFileButton;
 var $uploadFileButton;
 var $browseFileButton;
+var $progressBar;
+var tmp_file;
 
 var options = {
     allowedFormats: ['jpg', 'jpeg', 'png', 'gif'],
@@ -61,9 +63,11 @@ $(document).ready(function () {
     $removeFileButton = $("#removeFileButton");
     $uploadFileButton = $("#imageUploadSubmitButton");
     $browseFileButton = $("#browseFileButton");
-    
+    $progressBar = $(".progress-bar");
+
     $removeFileButton.css('display', 'none');
     $uploadFileButton.css('display', 'none');
+    $progressBar.css('display', 'none');
 
     if (typeof (window.FileReader) == 'undefined') {
 //        $dropZone.text('Не поддерживается браузером!');
@@ -105,12 +109,25 @@ $(document).ready(function () {
     });
 
     $uploadFileButton.click(function () {
-        $imageUpload.find('.alert').remove();
+//        $imageUpload.find('.alert').remove();
+//        $dropZone.prepend(getSettingsBlock());
 
-        $dropZone.find('img').remove();
-        $dropZone.prepend(getDropZoneMessage());
+//        $dropZone.find('img').remove();
+//        $dropZone.prepend(getDropZoneMessage());
 
-        $imageUploadInputFileName.val('');
+//        $imageUploadInputFileName.val('');
+//        
+//        var $settingsPanel = $("#settingsPanel");
+//        $settingsPanel.css('display', 'inline-block');
+//        
+//        var BlobBuilder = window.MozBlobBuilder || window.WebKitBlobBuilder || window.BlobBuilder;
+//        var bb = new BlobBuilder();
+//        bb.append('hello world'); // <<<
+
+
+        upload(tmp_file);
+//        upload(bb.getBlob('text/plain')); // <<<
+
     });
 
     $browseFileButton.on('change', function () {
@@ -123,6 +140,7 @@ $(document).ready(function () {
 });
 
 function showImagePreview(file) {
+    tmp_file = file;
     $imageUpload.find('.alert').remove();
     $dropZone.find('img').remove();
 
@@ -156,3 +174,50 @@ function showImagePreview(file) {
         $browseFileButton.prop('disabled', false);
     });
 }
+
+function upload(file) {
+    var data = new FormData();
+    data.append('file', file);
+
+    $progressBar.css('display', 'inline-block');
+    var xhr = new XMLHttpRequest();
+
+    //    // Слушаем процесс загрузки файла
+//    var progressBar = document.querySelector('progress');
+
+    xhr.upload.onprogress = function (e) { // <<<
+        if (e.lengthComputable) {
+            var valeur = (e.loaded / e.total) * 100;
+            $progressBar.css('width', valeur + '%').attr('aria-valuenow', valeur);
+            $progressBar.text(valeur + '%');
+//            progressBar.value = (e.loaded / e.total) * 100;
+//            progressBar.textContent = progressBar.value; // Если браузер не поддерживает элемент progress
+        }
+    };
+//    var formData = new FormData();
+//    xhr.onload = successfullyUploaded;
+    xhr.open("POST", "http://localhost:8080/upload", true);
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+//    for(var file in files) {
+//        formData.append("uploads", files[file].data);
+//    }
+    xhr.send(data);
+
+}
+//
+//function uploadFiles(file) {
+//    var url = "http://localhost:8080/upload";
+//    var formData = new FormData();
+//
+//    formData.append(file.name, file);
+////  for (var i = 0, file; file = files[i]; ++i) {
+////    formData.append(file.name, file);
+////  }
+//
+//    var xhr = new XMLHttpRequest();
+//    xhr.open('POST', url, true);
+//    xhr.onload = function (e) { /*...*/
+//    };
+//
+//    xhr.send(formData);  // multipart/form-data
+//}
