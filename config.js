@@ -1,6 +1,7 @@
 var path = require('path');
 
 module.exports = {
+    OLD_IMAGES_PATH: path.join(__dirname, 'old_images'),
     IMAGES_TARGET_FOLDER: path.join(__dirname, '/uploads/'),
     IMAGES_TARGET_PATH: '/uploads/',
     IMAGE_TYPE: "image/jpeg",

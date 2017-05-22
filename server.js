@@ -7,9 +7,9 @@ var http = require('http');
 var https = require('https');
 var config = require('./config.js');
 var url = require('url');
-var sharp = require('sharp');
 var fs = require('fs');
 var multer = require('multer');
+var crypto = require('crypto');
 
 // determine wether we need to use `http` or `https` libs
 var httpLib = http;
@@ -23,9 +23,9 @@ var httpLib = http;
 app.use('/', express.static(path.join(__dirname, 'www')));
 
 //for save compatibility with old img.omsklug.com
-app.use('/i', express.static(path.join(__dirname, 'old_images')));
+app.use('/i', express.static(config.OLD_IMAGES_PATH));
 
-app.get('/health', function(req, res) {
+app.get('/health', function (req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Headers', 'origin, content-type, accept');
     res.setHeader('Content-Type', 'application/json');
@@ -36,14 +36,19 @@ app.get('/health', function(req, res) {
 });
 
 var storage = multer.diskStorage({
-    destination: function(request, file, callback) {
+    destination: function (request, file, callback) {
         callback(null, config.IMAGES_TARGET_FOLDER);
     },
-    filename: function(request, file, callback) {
-//        console.log(file);
-        callback(null, file.originalname);
+    filename: function (request, file, callback) {
+        console.log(file);
+        callback(null, getNewFilename(file.originalname));
     }
 });
+
+function getNewFilename(text) {
+//  var hash = crypto.createHash('sha256').update(text).digest('base64');
+    return crypto.createHash('sha256').update(text + new Date()).digest('hex');// + Date.now()
+}
 
 var upload = multer({
 //     dest: config.IMAGES_TARGET_FOLDER,
@@ -56,19 +61,39 @@ var upload = multer({
     }
 }).single('file');
 
-app.post('/upload', function(req, res) {
-    upload(req, res, function(err) {
-        if (err) {
-            // An error occurred when uploading
-            console.log('error' + err);
-        }
-    });
-    // console.log(req);
-//    console.log(req.body, 'Body');
-//    console.log(req.file, 'file');
-    res.status(200).end();
-});
+//app.post('/upload', function (req, res) {
+//    upload(req, res, function (err) {
+//        if (err) {
+//            // An error occurred when uploading
+//            console.log('error' + err);
+//        }
+//    });
+//    // console.log(req);
+////    console.log(req.body, 'Body');
+////    console.log(req.file, 'file');
+//    res.status(200).end();
+//});
 
+app.post('/upload', upload, (req, res) => {
+    if (req.file !== undefined) {
+
+        // once uploaded save the user data along with uploaded photo path to the database.
+        res.json({
+            'filename': req.file.originalname,
+            'destination': req.file.filename,
+            'mime': req.file.mimetype,
+            'filesize': req.file.size,
+            'ip': req.headers['x-forwarded-for'] ||
+                    req.connection.remoteAddress ||
+                    req.socket.remoteAddress ||
+                    req.connection.socket.remoteAddress
+        });
+    } else {
+        res.json({
+            'message': 'Unable to Upload file'
+        });
+    }
+});
 
 // app.post('/upload', upload.single('file'), function(req, res) {
 //   // console.log(req);
@@ -125,7 +150,7 @@ app.post('/upload', function(req, res) {
 // });
 
 //show files
-app.get('/uploads/:file', function(req, res) {
+app.get('/uploads/:file', function (req, res) {
     file = req.params.file;
     var img = fs.readFileSync(__dirname + "/uploads/" + file);
     res.writeHead(200, {
@@ -151,7 +176,7 @@ app.get('/uploads/:file', function(req, res) {
 //         cluster.fork();
 //     });
 // } else {
-var server = app.listen(8080, function() {
+var server = app.listen(8080, function () {
     var host = server.address().address;
     var port = server.address().port;
 
