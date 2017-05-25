@@ -16,7 +16,11 @@ function getDropZoneMessage() {
 
 function getImageThumbnailHtml(src) {
 //    return '<img src="' + src + '" alt="Image preview" class="thumbnail" style="max-width: ' + options.maxWidth + 'px; max-height: ' + options.maxHeight + 'px">';
-    return '<img src="' + src + '" alt="Image preview" class="thumbnail img-responsive" >';
+    var html = [];
+    html.push('<div class="wrapper">');
+    html.push('<img src="' + src + '" alt="Image preview" class="thumbnail" >');
+    html.push('</div>');
+    return html.join('');
 }
 
 function getFileExtension(path) {
@@ -49,10 +53,12 @@ var $browseFileButton;
 var $progressBar;
 var tmp_file;
 var $uploadedFileInfo;
+var $buttonBlock;
+var $browseBlock;
 
 var options = {
     allowedFormats: ['jpg', 'jpeg', 'png', 'gif'],
-    maxFileSizeKb: 2048,
+    maxFileSizeKb: 10240,
     APP_URL: "http://localhost:8080"
 };
 
@@ -60,16 +66,14 @@ $(document).ready(function () {
     $imageUpload = $('.imageupload');
     $imageUploadInputFileName = $('#imageUploadInputFileName');
     $dropZone = $('#dropZone');
+    $cha = $("#removeFileButton");
     $removeFileButton = $("#removeFileButton");
     $uploadFileButton = $("#imageUploadSubmitButton");
     $browseFileButton = $("#browseFileButton");
     $progressBar = $(".progress");
     $uploadedFileInfo = $("#uploadedFileInfo");
-
-    $removeFileButton.css('display', 'none');
-    $uploadFileButton.css('display', 'none');
-    $progressBar.css('display', 'none');
-    $uploadedFileInfo.css('display', 'none');
+    $buttonBlock = $('#buttonBlock');
+    $browseBlock = $('#browseBlock');
 
     if (typeof (window.FileReader) === 'undefined') {
         $imageUpload.prepend(getAlertHtml('FileReader does not supported by browser'));
@@ -90,7 +94,6 @@ $(document).ready(function () {
         $(this).blur();
         event.preventDefault();
         $dropZone.removeClass('hover');
-//        $dropZone.addClass('drop');
         var file = event.dataTransfer.files[0];
         console.log("dropZone: " + file.name);
         showImagePreview(file);
@@ -103,31 +106,14 @@ $(document).ready(function () {
 
         $dropZone.prepend(getDropZoneMessage());
         $imageUploadInputFileName.val('');
-        $removeFileButton.css('display', 'none');
-        $uploadFileButton.css('display', 'none');
-        $browseFileButton.find('span').text('Browse');
+        $buttonBlock.css('display', 'none');
+        $browseBlock.css('display', 'inline');
     });
 
     $uploadFileButton.click(function () {
-//        $imageUpload.find('.alert').remove();
-//        $dropZone.prepend(getSettingsBlock());
-
-//        $dropZone.find('img').remove();
-//        $dropZone.prepend(getDropZoneMessage());
-
-//        $imageUploadInputFileName.val('');
-//        
-//        var $settingsPanel = $("#settingsPanel");
-//        $settingsPanel.css('display', 'inline-block');
-//        
-//        var BlobBuilder = window.MozBlobBuilder || window.WebKitBlobBuilder || window.BlobBuilder;
-//        var bb = new BlobBuilder();
-//        bb.append('hello world'); // <<<
-
-
+        $buttonBlock.css('display', 'none');
+        $browseFileButton.css('display', 'none');
         upload(tmp_file);
-//        upload(bb.getBlob('text/plain')); // <<<
-
     });
 
     $browseFileButton.on('change', function () {
@@ -136,7 +122,6 @@ $(document).ready(function () {
         console.log("browseFileButton: " + myFile[0].name);
         showImagePreview(myFile[0]);
     });
-
 });
 
 function showImagePreview(file) {
@@ -154,9 +139,8 @@ function showImagePreview(file) {
                 $dropZone.find('div').remove();
                 $dropZone.prepend(getImageThumbnailHtml(e.target.result));
 //                    $fileTab.prepend(getImageThumbnailHtml(e.target.result));
-                $browseFileButton.find('span').text('Change');
-                $removeFileButton.css('display', 'inline-block');
-                $uploadFileButton.css('display', 'inline-block');
+                $buttonBlock.css('display', 'table');
+                $browseBlock.css('display', 'none');
                 $imageUploadInputFileName.val(file.name);
             };
 
@@ -191,11 +175,11 @@ function upload(file) {
         }
     };
     xhr.onreadystatechange = function () {
-        if (xhr.readyState == 4) { //XMLHttpRequest.DONE
+        if (xhr.readyState === 4) { //XMLHttpRequest.DONE
             responsePage($.parseJSON(xhr.response));
         }
     };
-    xhr.open("POST", options.APP_URL + '/upload', true);
+    xhr.open("POST", options.APP_URL + '/api/upload', true);
     xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
     xhr.send(data);
 }
@@ -203,11 +187,26 @@ function upload(file) {
 function responsePage(data) {
     $uploadedFileInfo.css('display', 'block');
     var html = [];
-    var url = options.APP_URL + '/uploads/' + data.destination;
+    var url = options.APP_URL + '/api/uploads/' + data.filename;
     html.push('<ul class="list-group">');
     html.push('<li class="list-group-item"><a href="' + url + '">' + url + '</a></li>');
-    html.push('<li class="list-group-item">' + 'Image: ' + data.filesize + '/' + data.mime + '</li>');
-    html.push('<li class="list-group-item">' + 'Client IP: ' + data.ip + '</li>');
+    html.push('<li class="list-group-item">' + 'Image: ' + data.filesize + ' / ' + data.mime_type + '</li>');
+    html.push('<li class="list-group-item">' + 'Client: ' + data.ip + ' / ' + data.client_user_agent + '</li>');
+    html.push('<li class="list-group-item">' + 'Creation date: ' + timeConverter(data.creation_date) + '</li>');
+
     html.push('</ul>');
     $uploadedFileInfo.prepend(html.join(''));
+}
+
+function timeConverter(UNIX_timestamp) {
+    var a = new Date(UNIX_timestamp);
+    var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    var year = a.getFullYear();
+    var month = months[a.getMonth()];
+    var date = a.getDate();
+    var hour = a.getHours();
+    var min = a.getMinutes();
+    var sec = a.getSeconds();
+    var time = date + '-' + month + '-' + year + ' ' + hour + ':' + min + ':' + sec;
+    return time;
 }

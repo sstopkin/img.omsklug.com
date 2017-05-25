@@ -19,8 +19,7 @@ var httpLib = http;
 
 // app.use(logger('dev'));
 
-// app.use(express.static(path.join(__dirname, 'www')));
-app.use('/', express.static(path.join(__dirname, 'www')));
+app.use('/', express.static(config.WWW));
 
 //for save compatibility with old img.omsklug.com
 app.use('/i', express.static(config.OLD_IMAGES_PATH));
@@ -37,7 +36,7 @@ app.get('/health', function (req, res) {
 
 var storage = multer.diskStorage({
     destination: function (request, file, callback) {
-        callback(null, config.IMAGES_TARGET_FOLDER);
+        callback(null, config.IMAGES_TARGET_PATH);
     },
     filename: function (request, file, callback) {
         console.log(file);
@@ -47,7 +46,7 @@ var storage = multer.diskStorage({
 
 function getNewFilename(text) {
 //  var hash = crypto.createHash('sha256').update(text).digest('base64');
-    return crypto.createHash('sha256').update(text + new Date()).digest('hex');// + Date.now()
+    return crypto.createHash('sha256').update(text + new Date().getTime()).digest('hex');
 }
 
 var upload = multer({
@@ -74,19 +73,28 @@ var upload = multer({
 //    res.status(200).end();
 //});
 
-app.post('/upload', upload, (req, res) => {
+app.post('/api/upload', upload, (req, res) => {
     if (req.file !== undefined) {
 
         // once uploaded save the user data along with uploaded photo path to the database.
-        res.json({
-            'filename': req.file.originalname,
-            'destination': req.file.filename,
-            'mime': req.file.mimetype,
+        var metadata = {
+            'original_filename': req.file.originalname,
+            'filename': req.file.filename,
+            'mime_type': req.file.mimetype,
             'filesize': req.file.size,
             'ip': req.headers['x-forwarded-for'] ||
                     req.connection.remoteAddress ||
                     req.socket.remoteAddress ||
-                    req.connection.socket.remoteAddress
+                    req.connection.socket.remoteAddress,
+            'creation_date': new Date().getTime(),
+            'client_user_agent': req.headers['user-agent']
+        };
+        res.json(metadata);
+
+        fs.writeFile(config.METADATA_PATH + metadata.filename, JSON.stringify(metadata), function (err) {
+            if (err) {
+                console.log(err);
+            }
         });
     } else {
         res.json({
@@ -95,12 +103,6 @@ app.post('/upload', upload, (req, res) => {
     }
 });
 
-// app.post('/upload', upload.single('file'), function(req, res) {
-//   // console.log(req);
-//     console.log(req.body, 'Body');
-//     console.log(req.file, 'files');
-//     res.status(200).end();
-// })
 // fieldname - Field name specified in the form
 // originalname - Name of the file on the user's computer
 // name - Renamed file name
@@ -149,12 +151,20 @@ app.post('/upload', upload, (req, res) => {
 //     res.end();
 // });
 
-//show files
-app.get('/uploads/:file', function (req, res) {
+app.get('/api/uploads/:file', function (req, res) {
     file = req.params.file;
-    var img = fs.readFileSync(__dirname + "/uploads/" + file);
+    var img = fs.readFileSync(config.IMAGES_TARGET_PATH + file);
     res.writeHead(200, {
         'Content-Type': 'image/jpg'
+    });
+    res.end(img, 'binary');
+});
+
+app.get('/api/meta/:file', function (req, res) {
+    file = req.params.file;
+    var img = fs.readFileSync(config.METADATA_PATH + file);
+    res.writeHead(200, {
+        'Content-Type': 'application/json'
     });
     res.end(img, 'binary');
 });
@@ -182,5 +192,4 @@ var server = app.listen(8080, function () {
 
     console.log("Started: " + new Date());
     console.log("Process: (pid " + process.pid + ") listening at http://%s:%s", host, port);
-
 });
