@@ -10,7 +10,7 @@ function getAlertHtml(message) {
 
 function getDropZoneMessage() {
     var html = [];
-    html.push('<div class="span text-center dropZone-hover">Drop image here</div>');
+    html.push('<div class="jumbotron1" style="border: 4px double black;">Drop image here</div>');
     return html.join('');
 }
 
@@ -18,7 +18,7 @@ function getImageThumbnailHtml(src) {
 //    return '<img src="' + src + '" alt="Image preview" class="thumbnail" style="max-width: ' + options.maxWidth + 'px; max-height: ' + options.maxHeight + 'px">';
     var html = [];
     html.push('<div class="wrapper">');
-    html.push('<img src="' + src + '" alt="Image preview" class="thumbnail" >');
+    html.push('<img src="' + src + '" alt="Image preview" class="thumbnail center-block">');
     html.push('</div>');
     return html.join('');
 }
